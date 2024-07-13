@@ -5,6 +5,7 @@ include($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 project(pico_micro_ros_example C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
+set(PICO_BOARD pico_w)
 
 pico_sdk_init()
 
@@ -15,6 +16,9 @@ add_executable(pico_micro_ros_example
 )
 target_link_libraries(pico_micro_ros_example
     pico_stdlib
+    #adc_read
+    hardware_adc
+    hardware_pwm
     microros
 )
 
@@ -34,3 +38,5 @@ add_compile_definitions(PICO_STDIO_DEFAULT_CRLF=0)
 
 # Generate UF2
 pico_add_extra_outputs(pico_micro_ros_example)
+
+

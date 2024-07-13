@@ -5,20 +5,30 @@
 #include <rclc/rclc.h>
 #include <rclc/executor.h>
 #include <std_msgs/msg/int32.h>
+#include <std_msgs/msg/float32.h>
 #include <rmw_microros/rmw_microros.h>
 
 #include "pico/stdlib.h"
+#include "hardware/adc.h"
 #include "pico_uart_transports.h"
 
 const uint LED_PIN = 25;
-
+#define ADC_TEMPERATURE_SENSOR 4 
 rcl_publisher_t publisher;
-std_msgs__msg__Int32 msg;
+//std_msgs__msg__Int32 msg;
+std_msgs__msg__Float32 msg;
 
 void timer_callback(rcl_timer_t *timer, int64_t last_call_time)
 {
     rcl_ret_t ret = rcl_publish(&publisher, &msg, NULL);
-    msg.data++;
+    uint16_t raw=adc_read();
+    const float conversion_factor = 3.3f / (1 << 12); // 12-bit ADC
+    float voltage = raw * conversion_factor;
+    float temperature = 27.0f - (voltage - 0.706f) / 0.001721f;
+    msg.data=temperature;
+ //   const float conversion_factor = 3.3f / (1 << 12);
+ //   uint16_t result = adc_read();
+ //   msg.data=result;
 }
 
 int main()
@@ -32,9 +42,12 @@ int main()
 		pico_serial_transport_read
 	);
 
-    gpio_init(LED_PIN);
-    gpio_set_dir(LED_PIN, GPIO_OUT);
-
+    stdio_init_all();
+    adc_init();
+    adc_set_temp_sensor_enabled(true);
+    adc_select_input(ADC_TEMPERATURE_SENSOR);
+ //   adc_init();
+ //   adc_select_input(4);
     rcl_timer_t timer;
     rcl_node_t node;
     rcl_allocator_t allocator;
@@ -61,7 +74,7 @@ int main()
     rclc_publisher_init_default(
         &publisher,
         &node,
-        ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32),
+        ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32),
         "pico_publisher");
 
     rclc_timer_init_default(
